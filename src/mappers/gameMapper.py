@@ -1,4 +1,6 @@
 import utils.constants as constants
+from bson.objectid import ObjectId
+import datetime
 
 class Ball(object):
    def __init__(self, name, val):
@@ -6,23 +8,27 @@ class Ball(object):
       self.Value = val
 
 class GameMapper(object):
-   def __init__(self, browser):
-      self.browser = browser
+   def __init__(self):
       self.draw = None
       self.date = None
       self.type = None
       self.result = []
 
-   def map(self, page):
-      self.draw = self.getElementText(constants.gameDrawPath % page)
-      self.date = self.getElementText(constants.gameDatePath % page)
-      self.type = self.getElementText(constants.gameTypePath % page)
-      self.result = self.ResolveBalls(page)
+   def generateId(self):
+      gen_time = datetime.datetime.utcnow()
+      return ObjectId.from_datetime(gen_time)
 
-   def ResolveBalls(self, page):
+   def map(self, page, browser):
+      self.id = self.generateId()
+      self.draw = self.getElementText(constants.gameDrawPath % page, browser)
+      self.date = self.getElementText(constants.gameDatePath % page, browser)
+      self.type = self.getElementText(constants.gameTypePath % page, browser)
+      self.result = self.ResolveBalls(page, browser)
+
+   def ResolveBalls(self, page, browser):
       items = []
       i = 1
-      results = self.getElements(constants.gameResultPath % page)
+      results = self.getElements(constants.gameResultPath % page, browser)
       last = len(results)
       for r in results:
          name = 'Bonus Ball' if last == i  else 'Ball %s' % i
@@ -31,19 +37,19 @@ class GameMapper(object):
          i = i + 1
       return items
 
-   def getElements(self, xpath):
+   def getElements(self, xpath, browser):
       items = []
-      elems = self.browser.find_elements_by_xpath(xpath)
+      elems = browser.find_elements_by_xpath(xpath)
       for elem in elems:
          itemRange = elem.text.split('\n')
          items.extend(itemRange)
       return items
 
-   def getElementText(self, xpath):
+   def getElementText(self, xpath, browser):
       """
       Get text from element helper
       """
-      elem = self.browser.find_elements_by_xpath(xpath)
+      elem = browser.find_elements_by_xpath(xpath)
       if len(elem) > 0:
          return elem[0].text
       else:

@@ -7,6 +7,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import time
 import json
 import os
+import pymongo
 import multiprocessing
 from multiprocessing import Pool
 import utils.constants as constants
@@ -21,11 +22,12 @@ class LottoCrawler(object):
             do = True
             maxPageRows = 10
             minPages = 1
+            self.delay = 5
             pageRows = maxPageRows * minPages
             for url in constants.crawlerUrls:
                 print(url)
                 self.browser.get(url)
-                time.sleep(1)
+                time.sleep(self.delay)
                 #from
                 dropdown = self.browser.find_element_by_xpath(constants.fromDateBtnPath)
                 dropdown.click()
@@ -49,7 +51,7 @@ class LottoCrawler(object):
                 #search
                 dropdown = self.browser.find_element_by_xpath(constants.searchBtnPath)
                 dropdown.click()
-                time.sleep(3)
+                time.sleep(self.delay)
                 
                 games = []
                 while(do):
@@ -60,18 +62,20 @@ class LottoCrawler(object):
                     if  len(pages) == 0 or len(games) == int(pages[len(pages) - 1]): break
 
                     for page in pages:
-                        game = GameMapper(self.browser)
-                        game.map(page)
-                        games.append(game)
-                        
+                        game = GameMapper()
+                        game.map(page, self.browser)
+                        item = LottoCrawler.jsonDumps(game)
+                        games.append(item)
+
                         nextElem[0].click()
-                        time.sleep(3)
+                        time.sleep(self.delay)
                     if  'disabled' in self.browser.find_elements_by_xpath("//li[@id='next']")[0].get_attribute('class'):
                         do = False
                         break
 
-                fileName = constants.crawlerUrls[0].split('/')[len(constants.crawlerUrls[0].split('/')) - 1]
-                self.saveJsonDocument(r"c:\WIP\national-lottery-crawler\output%s.json" % fileName, games.__dict__)
+                #fileName = constants.crawlerUrls[0].split('/')[len(constants.crawlerUrls[0].split('/')) - 1]
+                #items = LottoCrawler.saveJsonDocument(r"%s/%s.json" % (constants.outputPath,fileName), games)
+                LottoCrawler.save(games)
 
         except Exception as ex:
             print(ex)
@@ -92,10 +96,28 @@ class LottoCrawler(object):
         """
         Converts data to json before saving to file
         """
-        d = json.dumps(data, indent=4, sort_keys=True)
+        d = LottoCrawler.jsonDumps(data)
         if isMultiPro:
             d = d + ','
         LottoCrawler.fileWriter(path, d, m)
+        return d
+
+    @staticmethod
+    def jsonDumps(data):
+        if data is None:
+            return data
+        if hasattr(data, "__dict__"):
+            data = data.__dict__
+        item = {}
+        for k, v in data.items():
+            if isinstance(v, list):
+                lys = []
+                [lys.append(LottoCrawler.jsonDumps(i)) for i in v]
+                item[k] = lys
+            else:
+                item[k] = v
+
+        return item    
 
     @staticmethod
     def fileWriter(path: str, data, m = 'a+'):
@@ -107,13 +129,11 @@ class LottoCrawler(object):
         f.write(data)
 
     @staticmethod
-    def getFilePath(path: str):
-        """
-        Gets absolute file path for given filename
-        """
-        basepath = os.path.dirname(__file__)
-        abs_file_path = os.path.abspath(os.path.join(basepath, "..", path))
-        return abs_file_path
+    def save(data):
+        myclient = pymongo.MongoClient('172.30.0.2',username='admin', password='R3ste4rt!', connect=False, authMechanism='SCRAM-SHA-1')
+        db = myclient["ithuba"]
+        gameCol = db["game"]
+        gameCol.insert_many(data)
 
     def getElementText(self, xpath):
         """

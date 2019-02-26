@@ -1,0 +1,15 @@
+version: '3.6'
+services:
+  ithuba.crawler:
+    image: 'ithuba.crawler:latest'
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+        - schreuder
+  schreuder:
+    image: mongo
+    environment:
+        MONGO_INITDB_ROOT_USERNAME: admin
+        MONGO_INITDB_ROOT_PASSWORD: R3ste4rt!
+    command: --bind_ip_all --auth

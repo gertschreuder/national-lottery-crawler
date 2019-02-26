@@ -1,4 +1,5 @@
-chromeDriverPath = r"C:\Program Files\chromedriver_win32\chromedriver.exe"
+chromeDriverPath = r"/usr/bin/chromedriver"
+outputPath = r"home/gert/git/national-lottery-crawler/output"
 
 crawlerUrls = [
     r"https://www.nationallottery.co.za/lotto-history",
