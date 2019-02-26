@@ -7,6 +7,5 @@
 * [Docker Community Edition](https://docs.docker.com/docker-for-windows/install/)
     * If you are running docker on Windows ensure that you are running Docker Linux containers
 * [Docker Compose](https://docs.docker.com/compose/install/)
-* We will need a tool named postman to test our APIs. You can download it from [here](https://www.getpostman.com/apps)
 * [Python 3.6](https://www.python.org/downloads/release/python-360/)
 * [Pip](https://pip.pypa.io/en/stable/installing/)
